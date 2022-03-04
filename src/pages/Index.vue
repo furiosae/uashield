@@ -2,7 +2,7 @@
   <q-page class="row items-center justify-evenly bg-grey-10 text-white">
     <q-card class="bg-grey-10 full-card">
       <q-card-section>
-        <div class="text-h4 text-center">{{ $t('ddos.counter.atackedTimes') }}</div>
+        <div class="text-h4 text-center">{{ $t('ddos.counter.attackedTimes') }}</div>
         <div class="text-h1 text-center">{{ atackCounter }}</div>
         <div class="text-h5 text-center">{{ $t('ddos.counter.currentTarget') + currentAtack }}</div>
       </q-card-section>
@@ -85,6 +85,30 @@
         </q-card-actions>
       </q-card>
     </q-dialog>
+
+    <!--    Update dialog-->
+    <q-dialog v-model="updateDialog" persistent>
+      <q-card>
+        <q-toolbar>
+          <q-avatar>
+            <img src="https://cdn.quasar.dev/logo-v2/svg/logo.svg">
+          </q-avatar>
+
+          <q-toolbar-title>{{ $t('ddos.update.title') }}</q-toolbar-title>
+
+          <q-btn flat round dense icon="close" v-close-popup />
+        </q-toolbar>
+
+        <q-card-section>
+          {{ updateMessage }}
+        </q-card-section>
+
+        <q-card-actions align="right">
+          <q-btn flat :label="$t('ddos.update.cancel')" color="primary" v-close-popup />
+          <q-btn flat :label="$t('ddos.update.confirm')" color="primary" v-close-popup @click="confirmInstallUpdate"/>
+        </q-card-actions>
+      </q-card>
+    </q-dialog>
   </q-page>
 </template>
 
@@ -120,6 +144,15 @@ export default defineComponent({
       this.atackCounter += 1
       if (this.log.length > 100) this.log.pop()
       this.log.unshift(data.log)
+    },
+
+    askForInstallUpdate (_event: unknown, data: { message: string }) {
+      this.updateDialog = true
+      this.updateMessage = data.message
+    },
+
+    confirmInstallUpdate () {
+      window.require('electron').ipcRenderer.send('installUpdate')
     }
   },
 
@@ -139,6 +172,8 @@ export default defineComponent({
 
   mounted () {
     window.require('electron').ipcRenderer.on('atack', this.serveAtack.bind(this))
+
+    window.require('electron').ipcRenderer.on('update', this.askForInstallUpdate.bind(this))
   },
 
   setup () {
@@ -151,8 +186,10 @@ export default defineComponent({
 
     const advancedSettingsDialog = ref(false)
     const maxDosersCount = ref(32)
+    const updateDialog = ref(false)
+    const updateMessage = ref('message')
 
-    return { ddosEnabled, forceProxy, atackCounter, currentAtack, lastAtackChange, log, advancedSettingsDialog, maxDosersCount }
+    return { ddosEnabled, forceProxy, atackCounter, currentAtack, lastAtackChange, log, advancedSettingsDialog, maxDosersCount, updateDialog, updateMessage }
   }
 })
 </script>
